@@ -91,7 +91,7 @@ class AngleConvert:
                             with the subtomogram.
     """
 
-    def __init__(self, euler_angles, axes=None, reference_frame=None, software=None):
+    def __init__(self, euler_angles, axes=None, reference_frame=None, software=None, to_software=None):
         """
 
         :param euler_angles: [N,3] numpy array of euler angles given in degrees
@@ -123,6 +123,10 @@ class AngleConvert:
 
         self.euler_angles = np.asarray(euler_angles, dtype=np.float)
         self.rotation_matrices = self.calculate_rotation_matrices()
+
+        if to_software is not None:
+            logging.debug(f'trying to convert given angles to {software} format')
+            self.to_software(to_software)
 
     def calculate_rotation_matrices(self):
         logging.debug('calculating rotation matrices from euler angles')
