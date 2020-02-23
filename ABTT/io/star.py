@@ -1,22 +1,58 @@
 import logging
+
 import numpy as np
+
 
 class StarDict(dict):
     """
     a dictionary with some methods for reading and writing of star files
     """
-    def __init__(self, star_file=None):
+
+    def __init__(self, star_file=None, data_block=None):
         if star_file is not None:
             self.from_file(star_file)
 
+        elif data_block is not None:
+            self.from_data_block(data_block)
+
+
     def from_file(self, star_file):
         logging.info(f'reading star file: {star_file}')
-        header = read_star_header(star_file)
-        column_headings = [info[1:info.find('#')].strip() for info in header if info.startswith('_')]
+        loop_info = data_loop_start_indices(star_file)
 
-        body = read_star_body(star_file)
-        for idx, heading in enumerate(column_headings):
-            self[heading] = np.asarray(body[idx])
+        if len(loop_info) == 1:
+            logging.info(f'single block star file...')
+            header = read_star_header(star_file)
+            column_headings = [info[1:info.find('#')].strip() for info in header if info.startswith('_')]
+            body = read_star_body(star_file)
+            for idx, heading in enumerate(column_headings):
+                self[heading] = np.asarray(body[idx])
+
+        else:
+            logging.info('multi block star file...')
+            data_blocks = get_data_blocks(star_file)
+            for data_block in data_blocks:
+                try:
+                    header, body = clean_data_block(data_block)
+                except:
+                    logging.warning('one or more data blocks in this star file are unsupported')
+                    continue
+
+                column_headings = [info[1:info.find('#')].strip() for info in header if info.startswith('_')]
+                for idx, heading in enumerate(column_headings):
+                    self[heading] = np.asarray(body[idx])
+
+    def from_data_block(self, data_block):
+        logging.info('making stardict from data block')
+        try:
+            header, body = clean_data_block(data_block)
+            column_headings = [info[1:info.find('#')].strip() for info in header if info.startswith('_')]
+            for idx, heading in enumerate(column_headings):
+                self[heading] = np.asarray(body[idx])
+        except:
+            logging.warning('one or more data blocks in this star file are unsupported')
+            self['data'] = data_block
+
 
     def nrows(self):
         key = self.headings()[0]
@@ -70,10 +106,25 @@ def read(star_file):
     """
     reads a star file into a StarDict object { column_name : [data] }
     :param star_file:
-    :return: StarDict
+    :return: StarDict or dict of StarDicts
     """
-    star_dict = StarDict(star_file)
-    return star_dict
+    logging.info(f'reading star file {star_file}')
+    loop_info = data_loop_start_indices(star_file)
+    if len(loop_info) == 1:
+        star_dict = StarDict(star_file)
+        return star_dict
+
+    else:
+        data_blocks = get_data_blocks(star_file)
+        star_dicts = {}
+        for data_block in data_blocks:
+            data_loop_name = data_block[0]
+            star_dict = StarDict(data_block=data_block)
+            star_dicts[data_loop_name] = star_dict
+        return star_dicts
+
+
+
 
 
 def star_loopheader(*args):
@@ -111,12 +162,11 @@ def read_star_header(star_file):
 
         header = []
         for line in lines:
-            line = line.strip('\n')
+            line = line.strip()
             if line.startswith('_') or line.endswith('_'):
                 header.append(line)
 
     return header
-
 
 def read_star_body(star_file):
     """
@@ -129,8 +179,13 @@ def read_star_body(star_file):
 
         body_lines = []
         for line in lines:
-            line = line.strip('\n')
-            if not (line.startswith('_') or line.endswith('_') or line == ''):
+            line = line.strip()
+            if not (line.startswith('_') or
+                    line.startswith('data_') or
+                    line.startswith('loop_') or
+                    line == '' or
+                    line == ' ' or
+                    line.startswith('#')):
                 body_lines.append(line)
 
         n_cols = len(body_lines[0].split())
@@ -144,3 +199,97 @@ def read_star_body(star_file):
                 except:
                     body[idx].append(col)
     return body
+
+
+def data_loop_start_indices(star_file):
+    """
+    Checks how many data loops there are in a star file.
+    :param star_file: star file
+    :return: dict {'data_fsc' : start index}
+    """
+    with open(star_file, 'r') as file:
+        lines = file.readlines()
+
+        data_loops = {}
+        for idx, line in enumerate(lines):
+            line = line.strip()
+            if line.startswith('data_'):
+                data_loops[line] = idx
+
+    return data_loops
+
+
+def get_data_blocks(star_file):
+    """
+    Gets multiple data blocks, headings and data, from a star file
+    :param star_file:
+    :return: list of data blocks
+    """
+    loop_indices = data_loop_start_indices(star_file)
+    with open(star_file, 'r') as file:
+        lines = file.readlines()
+        blocks = []
+
+        for data_loop in loop_indices:
+            block = []
+            start_index = loop_indices[data_loop]
+            seen_data_loop_name = False
+
+            for line in lines[start_index:]:
+                line = line.strip()
+
+                if line.startswith('data_') and seen_data_loop_name is True:
+                    break
+
+                block.append(line)
+
+                if line == data_loop:
+                    seen_data_loop_name = True
+            blocks.append(block)
+
+        return blocks
+
+
+def clean_data_block(star_data_block):
+    """
+    converts a list of strings corresponding to a data block from a star file into a StarDict
+    :param star_data_block: list of strings
+    :return: StarDict
+    """
+    logging.info('Cleaning data blocks from multi block star file')
+    known_data_blocks = ['data_', 'data_fsc', 'data_guinier']
+
+    if star_data_block[0] in known_data_blocks:
+        header = []
+        for line in star_data_block:
+            line = line.strip()
+            if line.startswith('_') or line.endswith('_'):
+                header.append(line)
+
+        body_lines = []
+        for line in star_data_block:
+            line = line.strip()
+            if not (line.startswith('_') or
+                    line.startswith('data_') or
+                    line.startswith('loop_') or
+                    line == '' or
+                    line == ' ' or
+                    line.startswith('#')):
+                body_lines.append(line)
+
+        n_cols = len(body_lines[0].split())
+        body = [[] for _ in range(n_cols)]
+
+        for line in body_lines:
+            data = line.split()
+            for idx, col in enumerate(data):
+                try:
+                    body[idx].append(float(col))
+                except:
+                    body[idx].append(col)
+
+        return header, body
+
+    else:
+        logging.info(f'star data loop header not recognised: {star_data_block[0]}')
+        return star_data_block

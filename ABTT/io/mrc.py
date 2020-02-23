@@ -1,6 +1,7 @@
 import logging
-import numpy as np
+
 import mrcfile
+import numpy as np
 
 
 def header(mrc_file):
@@ -12,6 +13,17 @@ def header(mrc_file):
     logging.info(f'reading mrc file header: {mrc_file}')
     with mrcfile.open(mrc_file, 'r', permissive=True, header_only=True) as mrc:
         return mrc.header
+
+
+def data(mrc_file):
+    """
+    reads the data of an mrc file
+    :param mrc_file:
+    :return:
+    """
+    logging.info(f'reading mrc file data: {mrc_file}')
+    with mrcfile.open(mrc_file, 'r', permissive=True) as mrc:
+        return mrc.data
 
 
 def size(mrc_file):
@@ -61,6 +73,12 @@ def is_cube(mrc_file):
     return cubic
 
 
-
-
-
+def voxel_size(mrc_file):
+    """
+    reads voxel size from mrc file header
+    :param mrc_file: mrc file to check
+    :return: np.recarray [x,y,z]
+    """
+    with mrcfile.open(mrc_file, 'r', permissive=True, header_only=True) as mrc:
+        voxel_size = mrc.voxel_size
+    return voxel_size
