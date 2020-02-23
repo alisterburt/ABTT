@@ -150,9 +150,9 @@ class AngleConvert:
         euler_angles = np.empty((n_rows, 3))
 
         for idx, rotation_matrix in self.rotation_matrices:
-            if target_axes_convention.upper() = 'ZXZ':
+            if target_axes_convention.upper() == 'ZXZ':
                 euler_angles[idx] = matrix2ZXZeuler(rotation_matrix)
-            elif target_axes_convention.upper() = 'ZYZ':
+            elif target_axes_convention.upper() == 'ZYZ':
                 euler_angles[idx] = matrix2ZYZeuler(rotation_matrix)
             else:
                 logging.warning(f'conversion for {target_axes_convention} not yet supported!')
