@@ -114,7 +114,7 @@ class AngleConvert:
                                         'frealign': frealign()}
         if software is not None:
             logging.debug("using 'software' flag to set axis and reference frame conventions")
-            axes, reference_frame = euler_angle_conventions[software.lower]
+            axes, reference_frame = self.euler_angle_conventions[software.lower]
             self.axes = axes
             self.reference_frame = reference_frame
         else:
