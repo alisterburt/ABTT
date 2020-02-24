@@ -27,6 +27,7 @@ class Plotter:
         self.colours = colours.generate_categorical_colourblind(3)
 
     def plot(self, ax=None,
+             fig=None,
              hide_spines=True,
              legend=True,
              plot_cutoff_0143=True,
@@ -40,8 +41,6 @@ class Plotter:
         if ax is None:
             fig, ax = plt.subplots()
             fig.set_size_inches(13, 8)
-        else:
-            fig = plt.gcf()
 
         # Plot FSC curves
         fsc_linewidth = 4
@@ -104,11 +103,12 @@ class Plotter:
         cutoff_linewidth = 3
 
         if plot_cutoff_05:
+            label = r'FSC$_{0.5}$ = ' + f'{self.resolution_05:.{reported_resolution_precision}f} ' + r'$\AA$'
             cutoff_05 = ax.scatter(self.fpix_05, 0.5,
                                    marker='o',
                                    c='tab:gray',
                                    s=200,
-                                   label=r'FSC$_{0.5}$ = ' + f'{self.resolution_05:.{reported_resolution_precision}f}',
+                                   label=label,
                                    edgecolors='k',
                                    linewidths=2,
                                    zorder=50)
@@ -126,11 +126,12 @@ class Plotter:
                                   c=cutoff_linecolor)
 
         if plot_cutoff_0143:
+            label = r'FSC$_{0.143}$ = ' + f'{self.resolution_0143:.{reported_resolution_precision}f} ' + r'$\AA$'
             cutoff_0143 = ax.scatter(self.fpix_0143, 0.143,
                                      marker='*',
                                      c='gold',
                                      s=300,
-                                     label=r'FSC$_{0.143}$ = ' + f'{self.resolution_0143:.{reported_resolution_precision}f}',
+                                     label=label,
                                      edgecolors='k',
                                      linewidths=2,
                                      zorder=50)
@@ -158,6 +159,8 @@ class Plotter:
         # Hide spines and make sure remaining spines are on top
         if hide_spines:
             axis_utils.hide_spines(ax)
+        else:
+            axis_utils.show_spines(ax)
 
         axis_utils.raise_spines(ax)
 

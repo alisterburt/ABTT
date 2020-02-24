@@ -51,7 +51,7 @@ def dynamo():
     :return: axes, reference_frame
     """
     axes = 'ZXZ'
-    reference_frame = 'rotate_particle'
+    reference_frame = 'rotate_reference'
     return axes, reference_frame
 
 
@@ -114,7 +114,7 @@ class AngleConvert:
                                         'frealign': frealign()}
         if software is not None:
             logging.debug("using 'software' flag to set axis and reference frame conventions")
-            axes, reference_frame = self.euler_angle_conventions[software.lower]
+            axes, reference_frame = self.euler_angle_conventions[software.lower()]
             self.axes = axes
             self.reference_frame = reference_frame
         else:
@@ -131,7 +131,7 @@ class AngleConvert:
     def calculate_rotation_matrices(self):
         logging.debug('calculating rotation matrices from euler angles')
         # Set up empty array for storage of rotation matrices
-        n_rows = self.data.shape[0]
+        n_rows = self.euler_angles.shape[0]
         rotation_matrices = np.empty((n_rows, 3, 3), dtype=np.float)
 
         # Calculate rotation matrix for each euler triplet
@@ -153,7 +153,7 @@ class AngleConvert:
         n_rows = self.rotation_matrices.shape[0]
         euler_angles = np.empty((n_rows, 3))
 
-        for idx, rotation_matrix in self.rotation_matrices:
+        for idx, rotation_matrix in enumerate(self.rotation_matrices):
             if target_axes_convention.upper() == 'ZXZ':
                 euler_angles[idx] = matrix2ZXZeuler(rotation_matrix)
             elif target_axes_convention.upper() == 'ZYZ':
@@ -165,7 +165,7 @@ class AngleConvert:
     def change_reference_frame(self):
         logging.debug('changing reference frame of rotation matrices by transposition, also updating euler angles.')
         self.transpose_rotation_matrices()
-        self.angles_from_rotation_matrices()
+        self.angles_from_rotation_matrices(self.axes)
         if self.reference_frame.lower() == 'rotate_particle':
             self.reference_frame = 'rotate_reference'
 
@@ -188,10 +188,10 @@ class AngleConvert:
         target_axes, target_reference_frame = self.euler_angle_conventions[software_name.lower()]
         message = f'converting euler angles from {self.axes} : {self.reference_frame} to {target_axes} : {target_reference_frame}'
         logging.info(message)
-        if self.reference_frame == target_reference_frame:
+        if self.reference_frame != target_reference_frame:
             self.change_reference_frame()
 
-        if self.axes == target_axes:
+        if self.axes != target_axes:
             self.change_axes(target_axes)
 
         return self.euler_angles

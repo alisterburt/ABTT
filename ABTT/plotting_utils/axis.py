@@ -15,6 +15,19 @@ def hide_spines(ax, spines=['top', 'right']):
     return None
 
 
+def show_spines(ax, spines=['top', 'right']):
+    """
+    Hide the spines of a matplotlib axis object
+    :param ax: matplotlib.axis
+    :param spines: list of spines to hide, default is ['top', 'right']
+    :return: None
+    """
+    logging.info('hiding spines in matplotlib axis')
+    for spine in spines:
+        ax.spines[spine].set_visible(True)
+
+    return None
+
 def change_axis_label_size(ax, fontsize, axes=['x', 'y']):
     """
     Change axis label sizes for matplotlib axis
