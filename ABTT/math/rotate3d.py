@@ -1,9 +1,11 @@
 import numpy as np
 
 
+# These rotation matrices all define passive rotations, i.e. axes turn whilst points remain stationary
+
 def rotate_x(theta):
     """
-    calculates the rotation matrix for an anticlockwise rotation around the x axis (when looking along the axis)
+    calculates the rotation matrix for a passive anticlockwise rotation around the x axis
     by the angle theta
     :param theta: angle about which to rotate x axis (degrees)
     :return: rotation_matrix
@@ -22,9 +24,9 @@ def rotate_x(theta):
 
 def rotate_y(theta):
     """
-    calculates the rotation matrix for an anticlockwise rotation around the y axis (when looking along the axis)
+    calculates the rotation matrix for a passive anticlockwise rotation around the y axis
     by the angle theta
-    :param theta: angle about which to rotate x axis (degrees)
+    :param theta: angle about which to rotate y axis (degrees)
     :return: rotation_matrix
     """
     theta_radians = np.deg2rad(theta)
@@ -41,7 +43,7 @@ def rotate_y(theta):
 
 def rotate_z(theta):
     """
-    calculates the rotation matrix for an anticlockwise rotation around the z axis (when looking along the axis)
+    calculates the rotation matrix for a passive anticlockwise rotation around the z axis
     by the angle theta
     :param theta: angle about which to rotate x axis (degrees)
     :return: rotation_matrix
