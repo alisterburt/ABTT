@@ -80,8 +80,7 @@ class Conventions:
         return axes, reference_frame, intrinsic, extrinsic
 
 
-
-class AngleConvert:
+class AngleConversion:
     """
     An object for conversion of euler angles between different conventions of different software packages
     Explanations and notation will be in the context of cryo-electron microscopy software
@@ -96,7 +95,7 @@ class AngleConvert:
                             with the subtomogram.
     """
 
-    def __init__(self, euler_angles, axes=None, reference_frame=None, intrinsic=True, extrinsic=None,
+    def __init__(self, euler_angles, axes=None, reference_frame=None, intrinsic=None, extrinsic=None,
                  from_software=None,
                  target_software=None):
         """
@@ -113,9 +112,9 @@ class AngleConvert:
         """
         logging.info('instantiated an AngleConvert object for euler angle manipulation')
         angle_conventions = Conventions()
-        self.euler_angle_conventions = {'relion': angle_conventions.relion(),
-                                        'dynamo': angle_conventions.dynamo(),
-                                        'emclarity': angle_conventions.emclarity(),
+        self.euler_angle_conventions = {'relion': angle_conventions.relion,
+                                        'dynamo': angle_conventions.dynamo,
+                                        'emclarity': angle_conventions.emclarity,
                                         }
 
         if from_software is not None:
@@ -128,15 +127,35 @@ class AngleConvert:
 
         else:
             self.axes = axes.upper()
-            self.reference_frame = reference_frame.lower()
-            self.intrinsic = intrinsic
-            if extrinsic is None:
-                self.extrinsic = not self.intrinsic
+            # Interpret reference frame
+            if reference_frame is not None:
+                self.reference_frame = reference_frame.lower()
             else:
-                self.extrinsic = extrinsic
-                self.intrinsic = not extrinsic
+                logging.debug("defaulting to 'rotate_reference' reference frame")
+                self.reference_frame = 'rotate_reference'
 
-        self.euler_angles = np.asarray(euler_angles, dtype=np.float)
+            # Interpret whether euler angles are defined as intrinsic or extrinsic
+            if intrinsic is None and extrinsic is None:
+                logging.debug("defaulting to interpreting euler angles as intrinsic")
+                self.intrinsic = True
+                self.extrinsic = False
+
+            elif intrinsic == extrinsic:
+                logging.warning("angles must be either intrinsic or extrinsic")
+
+            elif intrinsic is True:
+                logging.debug('angles will be interpreted as intrinsic')
+                self.intrinsic = True
+                self.extrinsic = False
+
+            elif extrinsic is True:
+                logging.debug('angles will be interpreted as extrinsic')
+                self.intrinsic = False
+                self.extrinsic = True
+
+        # Force euler angles to have correct format and shape (N,3) array, float
+        # Calculate rotation matrices from euler angles
+        self.euler_angles = np.asarray(euler_angles, dtype=np.float).reshape((-1, 3))
         self.rotation_matrices = self.calculate_rotation_matrices()
 
         if target_software is not None:
@@ -166,16 +185,36 @@ class AngleConvert:
         rotation_matrices_transposed = np.transpose(self.rotation_matrices, (0, 2, 1))
         self.rotation_matrices = rotation_matrices_transposed
 
-    def angles_from_rotation_matrices(self, target_axes_convention, intrinsic=True, extrinsic=None):
+    def angles_from_rotation_matrices(self, target_axes_convention, intrinsic=None, extrinsic=None):
         logging.debug(f'calculating {target_axes_convention} euler angles from stored rotation matrices')
         n_rows = self.rotation_matrices.shape[0]
         euler_angles = np.empty((n_rows, 3))
 
+        if intrinsic is None and extrinsic is None:
+            logging.debug("defaulting to generating euler angles as intrinsic")
+            intrinsic = True
+            extrinsic = False
+
+        elif intrinsic == extrinsic:
+            logging.warning("angles must be either intrinsic or extrinsic")
+
+        elif intrinsic is True:
+            logging.debug('angles will be generated as intrinsic')
+            intrinsic = True
+            extrinsic = False
+
+        elif extrinsic is True:
+            logging.debug('angles will be generated as extrinsic')
+            intrinsic = False
+            extrinsic = True
+    
         for idx, rotation_matrix in enumerate(self.rotation_matrices):
             if target_axes_convention.upper() == 'ZXZ':
                 euler_angles[idx] = matrix2ZXZeuler(rotation_matrix,
                                                     intrinsic=intrinsic,
                                                     extrinsic=extrinsic)
+                self.intrinsic = intrinsic
+                self.extrinsic = extrinsic
 
             elif target_axes_convention.upper() == 'ZYZ':
                 euler_angles[idx] = matrix2ZYZeuler(rotation_matrix,
@@ -183,10 +222,11 @@ class AngleConvert:
                                                     extrinsic=extrinsic)
             else:
                 logging.warning(f'conversion for {target_axes_convention} not yet supported!')
-        return euler_angles
+        self.euler_angles = euler_angles
+        return self.euler_angles
 
     def change_reference_frame(self):
-        logging.debug('changing reference frame of rotation matrices by transposition, also updating euler angles.')
+        logging.debug('changing reference frame of rotation matrices by transposition, also updating euler angles')
         self.transpose_rotation_matrices()
         self.angles_from_rotation_matrices(self.axes)
         if self.reference_frame.lower() == 'rotate_particle':
@@ -202,8 +242,10 @@ class AngleConvert:
         :return:
         """
         logging.debug(f'changing axis convention from {self.axes} to {target_axes_convention}')
-        euler_angles = self.angles_from_rotation_matrices(target_axes_convention)
-        self.euler_angles = euler_angles
+        self.angles_from_rotation_matrices(target_axes_convention,
+                                           intrinsic=self.intrinsic,
+                                           extrinsic=self.extrinsic
+                                           )
         self.axes = target_axes_convention.upper()
 
     def to_software(self, software_name):
@@ -214,15 +256,16 @@ class AngleConvert:
          target_extrinsic) = self.euler_angle_conventions[software_name.lower()]
         message = f'converting euler angles from {self.axes} : {self.reference_frame} to {target_axes} : {target_reference_frame}'
         logging.info(message)
+
         if self.reference_frame != target_reference_frame:
             self.change_reference_frame()
+
+        if self.axes != target_axes:
+            self.change_axes(target_axes)
 
         if self.intrinsic != target_intrinsic or self.extrinsic != target_extrinsic:
             self.calculate_rotation_matrices()
             self.angles_from_rotation_matrices(target_axes, target_intrinsic, target_extrinsic)
-
-        if self.axes != target_axes:
-            self.change_axes(target_axes)
 
         return self.euler_angles
 

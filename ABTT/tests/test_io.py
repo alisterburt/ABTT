@@ -121,3 +121,16 @@ class PDBTest(unittest.TestCase):
             chains.append(chain)
             coords.append(coord)
         self.assertTrue(len(chains) == len(coords) == 4993)
+
+
+class DynamoTableTest(unittest.TestCase):
+    def test_read(self):
+        file = 'example_data/io/dynamotable.tbl'
+        table = ABTT.io.dynamo_table.read(file)
+        self.assertTrue(table['x'][0] == 21.17)
+        self.assertTrue(table['tdrot'][0] == 62.017)
+        return table
+
+    def test_write(self):
+        table = self.test_read()
+        table.write('example_data/io/dynamotable_out.tbl')
