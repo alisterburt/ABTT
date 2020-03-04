@@ -3,3 +3,4 @@ notebooks/.ipynb_checkpoints
 /notebooks/test.svg
 /ABTT/tests/example_data/local_resolution/10_datadeposition/
 /ABTT/tests/example_data/local_resolution/
+**/__pycache__
