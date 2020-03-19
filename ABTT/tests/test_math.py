@@ -112,9 +112,9 @@ class EulerAnglesTest(unittest.TestCase):
 
 class CTFTest(unittest.TestCase):
     def test_electron_wavelength(self):
-        electron_wavelength = ABTT.math.electron.wavelength(300000)
+        electron_wavelength = ABTT.math.electron.relativistic_wavelength(300000)
         reference_value_300keV = 1.97e-12
-        # doesn't work...
+        self.assertAlmostEqual(electron_wavelength, reference_value_300keV)
 
     def test_ctf_calculator(self):
         spatial_frequency = np.linspace(0.001, 0.5, 1000)
@@ -123,3 +123,4 @@ class CTFTest(unittest.TestCase):
             ctf.append(ABTT.math.ctf.ctf(2.7e-3, 1.97e-12, value, -3e-6))
 
         print(ctf)
+

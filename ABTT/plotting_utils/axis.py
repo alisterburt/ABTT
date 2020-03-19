@@ -94,3 +94,50 @@ def raise_spines(ax):
     """
     for axis in ['top', 'bottom', 'left', 'right']:
         ax.spines[axis].zorder = 999999
+
+
+def hide_ticklabels(ax, axes=('x', 'y')):
+    """
+    hide axes of a matplotlib axis object
+    :param ax: matplotlib.axis
+    :param axes: ('x','y') or ('x') or ('y')
+    :return: None
+    """
+    for axis in axes:
+        if axis == 'x':
+            ax.set_xticklabels([])
+
+        elif axis == 'y':
+            ax.set_yticklabels([])
+
+    return None
+
+
+def hide_ticks(ax, axes=('x', 'y')):
+    """
+    hide ticks of a matplotlib axis object
+    :param ax: matplotlib.axis
+    :param axes: ('x','y') or ('x') or ('y')
+    :return: None
+    """
+    for axis in axes:
+        if axis == 'x':
+            ax.set_xticks([])
+
+        elif axis == 'y':
+            ax.set_yticks([])
+
+    return None
+
+
+def hide_ticks_and_ticklabels(ax, axes=('x', 'y')):
+    """
+    hide ticks and ticklabels of a matplotlib axis object
+    :param ax: matplotlib.axis
+    :param axes: ('x','y') or ('x') or ('y')
+    :return: None
+    """
+    hide_ticks(ax, axes)
+    hide_ticklabels(ax, axes)
+
+    return None
