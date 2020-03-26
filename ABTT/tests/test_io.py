@@ -126,7 +126,7 @@ class PDBTest(unittest.TestCase):
 class DynamoTableTest(unittest.TestCase):
     def test_read(self):
         file = 'example_data/io/dynamotable.tbl'
-        table = ABTT.io.dynamo_table.read(file)
+        table = ABTT.io.dynamo.table_read(file)
         self.assertTrue(table['x'][0] == 21.17)
         self.assertTrue(table['tdrot'][0] == 62.017)
         return table

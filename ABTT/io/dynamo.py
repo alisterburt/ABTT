@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 
-class Convention(dict):
+class TableConvention(dict):
     """
     Dynamo table convention as per: https://wiki.dynamo.biozentrum.unibas.ch/w/index.php/Table_convention
     """
@@ -72,7 +72,7 @@ class DynamoTable(dict):
     """
 
     def __init__(self, table_file=None):
-        self.convention = Convention()
+        self.convention = TableConvention()
 
         if table_file is not None:
             self.from_file(table_file)
@@ -132,6 +132,23 @@ class DynamoTable(dict):
         return np.vstack((x, y, z)).transpose()
 
 
-def read(table_file):
-    table = DynamoTable(table_file)
-    return table
+def table_read(table_file):
+    dynamo_table = DynamoTable(table_file)
+    return dynamo_table
+
+
+def table_map_read(file):
+    """
+    Reads dynamo table map file
+    :param file: table map file from dynamo
+    :return: dict of form {idx : '/path/to/tomogram'}
+    """
+    table_map = open(file, 'r')
+    lines = table_map.readlines()
+
+    out_dict = {}
+    for line in lines:
+        idx, path = line.strip().split()
+        out_dict[int(idx)] = path
+
+    return out_dict
