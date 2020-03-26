@@ -88,6 +88,9 @@ class DynamoTable(dict):
             except:
                 logging.debug(f'failed to access data for {key}')
 
+        self['eulers'] = self.eulers()
+        self['xyz'] = self.xyz()
+
     def write(self, file):
         logging.info(f'writing table file from DynamoTable object: {file}')
         # Check all dict items have same length, if so set empty array
@@ -110,6 +113,23 @@ class DynamoTable(dict):
         # save file
         np.savetxt(file, data, delimiter=' \t', fmt=format)
         return file
+
+    def eulers(self):
+        """
+        extracts euler angles from table as (N,3) numpy array
+        :return: (N,3) numpy array of euler angles
+        """
+        return np.vstack((self['tdrot'], self['tilt'], self['narot'])).transpose()
+
+    def xyz(self):
+        """
+        extracts xyz coordinates from table as (N,3) numpy array
+        :return: (N,3) numpy array of xyz positions
+        """
+        x = self['x'] + self['dx']
+        y = self['y'] + self['dy']
+        z = self['z'] + self['dz']
+        return np.vstack((x, y, z)).transpose()
 
 
 def read(table_file):
