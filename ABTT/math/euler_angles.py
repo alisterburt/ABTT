@@ -412,7 +412,28 @@ def matrix2ZYZeuler(rotation_matrix, intrinsic=True, extrinsic=None):
 
     return ZYZeuler
 
-# def matrix2XYZeuler(rotation_matrix):
-#
-# def matrix2
 
+def relion2dynamo(euler_angles_relion):
+    """
+    Converts (N,3) numpy array of relion euler angles (rot, tilt, psi) to dynamo format (tdrot, tilt, narot)
+    :param euler_angles_relion: (N,3) rlnAngleRot, rlnAngleTilt, rlnAnglePsi
+    :type euler_angles_relion: (N,3) numpy array
+    :return: euler_angles_dynamo: (N,3) numpy array containing dynamo format euler angles
+    """
+    angle_conversion = AngleConversion(euler_angles_relion, from_software='relion')
+    euler_angles_dynamo = angle_conversion.to_software('dynamo')
+
+    return euler_angles_dynamo
+
+
+def dynamo2relion(euler_angles_dynamo):
+    """
+    Converts (N,3) numpy array of dynamo euler angles (tdrot, tilt, narot) to dynamo format (rot, tilt, psi)
+    :param euler_angles_dynamo: (N,3) tdrot, tilt, narot
+    :type euler_angles_dynamo: (N,3) numpy array
+    :return: euler_angles_relion: (N,3) numpy array containing dynamo format euler angles
+    """
+    angle_conversion = AngleConversion(euler_angles_dynamo, from_software='dynamo')
+    euler_angles_relion = angle_conversion.to_software('relion')
+
+    return euler_angles_relion
