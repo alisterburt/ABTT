@@ -53,7 +53,6 @@ class StarDict(dict):
             logging.warning('one or more data blocks in this star file are unsupported')
             self['data'] = data_block
 
-
     def nrows(self):
         key = self.headings()[0]
         nrows = len(self[key])
@@ -100,6 +99,17 @@ class StarDict(dict):
             for line in body:
                 file.write(line)
 
+    def extract_eulers_relion(self):
+        """
+        extracts rlnAngleRot, rlnAngleTilt & rlnAnglePsi from a StarDict into an N,3 numpy array
+        :return: euler_angles_relion (N,3) numpy array
+        """
+        rln_rot = self['rlnAngleRot']
+        rln_tilt = self['rlnAngleTilt']
+        rln_psi = self['rlnAnglePsi']
+
+        euler_angles_relion = np.vstack((rln_rot, rln_tilt, rln_psi)).transpose()
+        return euler_angles_relion
 
 
 def read(star_file):
