@@ -93,7 +93,7 @@ class EulerAnglesTest(unittest.TestCase):
         euler_triplet_ZXZ_intrinsic = [-155.55, 63.924, 197.81]  # rotates_reference
         euler_triplet_ZYZ_extrinsic = [107.81, 63.924, -65.55]  # rotates reference
 
-        conversion_object = ABTT.euler_angles.AngleConversion(euler_triplet_ZXZ_intrinsic, 'ZXZ', intrinsic=True)
+        conversion_object = ABTT.euler_angles.Conversion(euler_triplet_ZXZ_intrinsic, 'ZXZ', intrinsic=True)
         conversion_object.angles_from_rotation_matrices('ZYZ', extrinsic=True)
         np.testing.assert_array_almost_equal(np.asarray(euler_triplet_ZYZ_extrinsic).reshape((-1, 3)),
                                              conversion_object.euler_angles)
@@ -102,9 +102,9 @@ class EulerAnglesTest(unittest.TestCase):
         euler_triplet_dynamo = [-155.55, 63.924, 197.81]  # ZXZ intrinsic rotates reference
         euler_triplet_relion = [107.81, 63.924, -65.55]  # ZYZ extrinsic rotates particle
 
-        conversion_object = ABTT.euler_angles.AngleConversion(euler_triplet_dynamo,
-                                                              from_software='dynamo',
-                                                              target_software='relion')
+        conversion_object = ABTT.euler_angles.Conversion(euler_triplet_dynamo,
+                                                         from_software='dynamo',
+                                                         target_software='relion')
 
         np.testing.assert_array_almost_equal(np.asarray(euler_triplet_relion).reshape((-1, 3)),
                                              conversion_object.euler_angles)

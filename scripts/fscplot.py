@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys
 
 import click
@@ -17,7 +18,7 @@ import ABTT.fsc.relion as relion_fsc
 @click.option('--precision_reported_resolution', default=2,
               help='precision for reporting of resolution values in legend')
 @click.option('--precision_resolution_axis', default=1, help='precision for the resolution values on the x-axis')
-def plot(star,
+def main(star,
          output,
          hide_spines,
          show_legend,
@@ -38,4 +39,4 @@ def plot(star,
 
 
 if __name__ == '__main__':
-    plot()
+    main()

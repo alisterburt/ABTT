@@ -80,7 +80,7 @@ class Conventions:
         return axes, reference_frame, intrinsic, extrinsic
 
 
-class AngleConversion:
+class Conversion:
     """
     An object for conversion of euler angles between different conventions of different software packages
     Explanations and notation will be in the context of cryo-electron microscopy software
@@ -176,6 +176,17 @@ class AngleConversion:
                                                                      extrinsic=self.extrinsic)
 
         # Store/return
+        self.rotation_matrices = rotation_matrices
+        return self.rotation_matrices
+
+    def calculate_rotation_matrices_fast(self):
+        logging.debug('calculating rotation matrices from euler angles')
+        rotation_matrices = np.apply_along_axis(calculate_rotation_matrix,
+                                                axis=1,
+                                                arr=self.euler_angles,
+                                                euler_angle_axes=self.axes,
+                                                intrinsic=self.intrinsic,
+                                                extrinsic=self.extrinsic)
         self.rotation_matrices = rotation_matrices
         return self.rotation_matrices
 
@@ -420,7 +431,7 @@ def relion2dynamo(euler_angles_relion):
     :type euler_angles_relion: (N,3) numpy array
     :return: euler_angles_dynamo: (N,3) numpy array containing dynamo format euler angles
     """
-    angle_conversion = AngleConversion(euler_angles_relion, from_software='relion')
+    angle_conversion = Conversion(euler_angles_relion, from_software='relion')
     euler_angles_dynamo = angle_conversion.to_software('dynamo')
 
     return euler_angles_dynamo
@@ -433,7 +444,7 @@ def dynamo2relion(euler_angles_dynamo):
     :type euler_angles_dynamo: (N,3) numpy array
     :return: euler_angles_relion: (N,3) numpy array containing dynamo format euler angles
     """
-    angle_conversion = AngleConversion(euler_angles_dynamo, from_software='dynamo')
+    angle_conversion = Conversion(euler_angles_dynamo, from_software='dynamo')
     euler_angles_relion = angle_conversion.to_software('relion')
 
     return euler_angles_relion

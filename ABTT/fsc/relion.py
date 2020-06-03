@@ -153,8 +153,8 @@ class Plotter:
         ax.set_ylabel('Fourier Shell Correlation')
 
         # Resize axes labels and ticklabels
-        axis_utils.change_axis_ticklabel_size(ax, 24)
-        axis_utils.change_axis_label_size(ax, 28)
+        axis_utils.ticklabel_size(ax, 24)
+        axis_utils.axis_label_size(ax, 28)
 
         # Hide spines and make sure remaining spines are on top
         if hide_spines:
@@ -165,7 +165,7 @@ class Plotter:
         axis_utils.raise_spines(ax)
 
         # Change axis and tick thickness
-        axis_utils.change_axis_thickness(ax, 4)
+        axis_utils.axis_thickness(ax, 4)
 
         # Plot legend
         if legend:

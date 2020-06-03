@@ -1,7 +1,7 @@
 import logging
 
 
-def hide_spines(ax, spines=['top', 'right']):
+def hide_spines(ax, spines=('top', 'right')):
     """
     Hide the spines of a matplotlib axis object
     :param ax: matplotlib.axis
@@ -15,7 +15,7 @@ def hide_spines(ax, spines=['top', 'right']):
     return None
 
 
-def show_spines(ax, spines=['top', 'right']):
+def show_spines(ax, spines=('top', 'right')):
     """
     Hide the spines of a matplotlib axis object
     :param ax: matplotlib.axis
@@ -28,7 +28,20 @@ def show_spines(ax, spines=['top', 'right']):
 
     return None
 
-def change_axis_label_size(ax, fontsize, axes=['x', 'y']):
+
+def title_size(ax, fontsize):
+    """
+    change axis title size
+    :param ax: matplotlib.axis
+    :param fontsize: new title size
+    :return: None
+    """
+    title = ax.get_title()
+    ax.set_title(title, fontsize=fontsize)
+    return None
+
+
+def axis_label_size(ax, fontsize, axes=('x', 'y')):
     """
     Change axis label sizes for matplotlib axis
     :param ax: matplotlib.axis
@@ -50,7 +63,7 @@ def change_axis_label_size(ax, fontsize, axes=['x', 'y']):
     return None
 
 
-def change_axis_ticklabel_size(ax, fontsize, axes=['x', 'y']):
+def ticklabel_size(ax, fontsize, axes=('x', 'y')):
     """
     Change ticklabel size for matplotlib axis on given axes.
     :param ax: matplotlib.axis
@@ -71,7 +84,7 @@ def change_axis_ticklabel_size(ax, fontsize, axes=['x', 'y']):
     return None
 
 
-def change_axis_thickness(ax, new_thickness):
+def axis_thickness(ax, new_thickness):
     """
     change x and y axis and ticklabel thickness for a matplotlib axis object
     :param ax: matplotlib.axis

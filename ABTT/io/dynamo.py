@@ -78,8 +78,14 @@ class DynamoTable(dict):
             self.from_file(table_file)
 
     def from_file(self, table_file):
-        logging.info(f'reading table file: {table_file}')
+        logging.debug(f'reading table file: {table_file}')
+        # try:
         data = np.loadtxt(table_file)
+        # except:
+        #     logging.debug(f'failed to read table, attempting to read as complex numbers...')
+        #     data_complex = np.genfromtxt(table_file, dtype=np.complex128)
+        #     data = data_complex.view(float)
+
         for key, column_idx in self.convention.items():
             try:
                 logging.debug(f'loaded data for {key} into DynamoTable')
@@ -88,8 +94,8 @@ class DynamoTable(dict):
             except:
                 logging.debug(f'failed to access data for {key}')
 
-        self['eulers'] = self.eulers()
-        self['xyz'] = self.xyz()
+        self['eulers'] = self.get_eulers()
+        self['xyz'] = self.get_xyz()
 
     def write(self, file):
         logging.info(f'writing table file from DynamoTable object: {file}')
@@ -114,14 +120,14 @@ class DynamoTable(dict):
         np.savetxt(file, data, delimiter=' \t', fmt=format)
         return file
 
-    def eulers(self):
+    def get_eulers(self):
         """
         extracts euler angles from table as (N,3) numpy array
         :return: (N,3) numpy array of euler angles
         """
         return np.vstack((self['tdrot'], self['tilt'], self['narot'])).transpose()
 
-    def xyz(self):
+    def get_xyz(self):
         """
         extracts xyz coordinates from table as (N,3) numpy array
         :return: (N,3) numpy array of xyz positions
@@ -130,6 +136,164 @@ class DynamoTable(dict):
         y = self['y'] + self['dy']
         z = self['z'] + self['dz']
         return np.vstack((x, y, z)).transpose()
+
+    def averaged(self):
+        """
+        extracts only particles which contributed to an average for a given table
+        :return: subtable
+        """
+        idx = self['averaged_value'] == 1
+        subtable = self.subtable(idx)
+        return subtable
+
+    def subtable(self, selection_indices):
+        """
+        extracts selected indices into a subtable and returns that
+        :param selection_indices:
+        :return: subtable
+        """
+        subtable = DynamoTable()
+        for key in self:
+            subtable[key] = self[key][selection_indices]
+
+        return subtable
+
+    def number_of_particles(self):
+        """
+        calculates number of particles in table
+        :return: number_of_particles
+        """
+        number_of_particles = self['x'].shape[0]
+        return number_of_particles
+
+    def particles_per_class(self):
+        """
+        calculates the number of particles contributing to each unique class in a DynamoTable object
+        :param self: DynamoTable object
+        :type self: dynamo_table
+        :return: class_particles: { class_index : n_particles }
+        """
+        class_indices = np.unique(self['ref'])
+        class_particles = StarDict
+
+        for idx in class_indices:
+            class_particles[idx] = np.sum(self['ref'] == idx)
+
+        return class_particles
+
+    def unique_tomograms(self):
+        """
+        extracts unique tomogram identifiers from a DynamoTable
+        :param self: DynamoTable object
+        :return: tomo_indices
+        """
+        tomo_indices = np.unique(self['tomo'])
+        return tomo_indices
+
+    def unique_classes(self):
+        """
+        extracts unique class identifiers from a DynamoTable
+        :param self: DynamoTable object
+        :return: class_indices
+        """
+        class_indices = np.unique(self['ref'])
+        return class_indices
+
+    def class_distribution(self):
+        """
+        calculates the class distribution
+        :param self: DynamoTable object
+        :return: particles_per_class { class_idx : n_particles }, percentage_per_class { class_idx : n_particles }
+        """
+        total_particles = self.number_of_particles()
+        unique_classes = self.unique_classes()
+
+        particles_per_class = {}
+        percentage_per_class = {}
+
+        for class_idx in unique_classes:
+            particles_per_class[class_idx] = np.sum(self['ref'] == class_idx)
+            percentage_per_class[class_idx] = 100 * (particles_per_class[class_idx] / total_particles)
+
+        return particles_per_class, percentage_per_class
+
+    def table_per_tomogram(self):
+        """
+        separates a table into dictionary of tables, one per tomogram, accessed by the tomogram index from the original table
+        :param self: DynamoTable object
+        :type self: DynamoTable
+        :return: dict of DynamoTable objects { tomo_idx : DynamoTable }
+        """
+        tomo_indices = np.unique(self['tomo'])
+        dict_of_dynamo_tables = {}
+
+        for tomo_idx in tomo_indices:
+            row_idx_for_current_tomogram = self['tomo'] == tomo_idx
+            table_for_current_tomogram = DynamoTable()
+            for key in self:
+                table_for_current_tomogram[key] = self[key][row_idx_for_current_tomogram]
+            dict_of_dynamo_tables[tomo_idx] = table_for_current_tomogram
+
+        return dict_of_dynamo_tables
+
+    def pairwise_distances(self):
+        """
+        returns a squareform pairwise distance matrix for the xyz positions in a DynamoTable object
+        :param self: DynamoTable object
+        :type DynamoTable: DynamoTable
+        :return: pairwise_distance_matrix
+        """
+        xyz = self['xyz']
+        pairwise_distance_matrix = squareform(pdist(xyz, 'euclidean'))
+
+        return pairwise_distance_matrix
+
+    def neighbours_in_range(self, min_distance, max_distance):
+        """
+        computes the number of neighbours within a minimum and maximum distance per particle for a DynamoTable object
+        :param self: DynamoTable object
+        :type self: DynamoTable
+        :param min_distance: minimum distance above which particles are considered neighbours
+        :param max_distance: maximum distance below which particles are considered neighbours
+        :return: neighbours_in_range_per_particle : m-element numpy array if xyz in dynamo table is mx3
+        """
+        pairwise_distance_matrix = self.pairwise_distances()
+        items_in_range = min_distance <= pairwise_distance_matrix < max_distance
+        neighbours_in_range_per_particle = np.sum(items_in_range, 0)
+
+        return neighbours_in_range_per_particle
+
+    def neighbourhood_analysis(self, min_distance, max_distance, number_of_bins):
+        """
+        computes a per-particle neighbourhood analysis for a DynamoTable object
+        neighbourhood analysis will be performed in equally sized, non-overlapping bins between the minimum and maximum distance
+        :param self: DynamoTable object
+        :type self: DynamoTable
+        :param min_distance: minimum distance above which particles are considered neighbours
+        :param max_distance: maximum distance below which particles are considered neighbours
+        :param number_of_bins: number of equally spaced bins in which to measure number of neighbouring particles
+        :return: neighbourhood_analysis_result, bin_centres, bin_minmax
+        """
+
+        bin_centres = np.linspace(min_distance, max_distance, number_of_bins)
+        bin_width = np.abs(bin_centres[1] - bin_centres[0])
+        minimum_values = bin_centres - (bin_width / 2.0)
+        maximum_values = bin_centres + (bin_width / 2.0)
+
+        bin_minmax = np.vstack((minimum_values, maximum_values)).transpose()
+
+        pairwise_distance_matrix = self.pairwise_distances()
+        n_rows = pairwise_distance_matrix.shape[0]
+        neighbourhood_analysis_result = np.zeros((n_rows, number_of_bins))
+
+        for idx, bin in enumerate(bin_minmax):
+            bin_minimum = bin[0]
+            bin_maximum = bin[1]
+            items_in_range = bin_minimum <= pairwise_distance_matrix < bin_maximum
+            neighbours_in_range_per_particle = np.sum(items_in_range, 0)
+            neighbourhood_analysis_result[:, idx] = neighbours_in_range_per_particle
+
+        return neighbourhood_analysis_result, bin_centres, bin_minmax
 
 
 def table_read(table_file):
